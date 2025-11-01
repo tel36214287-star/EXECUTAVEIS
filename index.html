@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculadora Agritech — Milho & Cana</title>
+<style>
+  :root{
+    --bg: linear-gradient(135deg,#f6fff2,#e8f7e8);
+    --card:#fff;
+    --accent:#2e7d32;
+    --muted:#6b6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: "Segoe UI", Roboto, Arial;
+    background:var(--bg);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px;
+  }
+  .panel{
+    width:960px;
+    max-width:95%;
+    background:var(--card);
+    border-radius:14px;
+    box-shadow:0 10px 30px rgba(16,24,16,0.12);
+    padding:22px;
+    display:flex;
+    gap:18px;
+  }
+
+  /* left: form */
+  .form {
+    flex:1;
+    padding:12px;
+  }
+  h1{margin:6px 0 12px;color:var(--accent);font-size:20px}
+  p.lead{margin:0 0 14px;color:var(--muted)}
+  label{display:block;font-size:13px;color:#333;margin:8px 0 6px}
+  input, select {
+    width:100%;
+    padding:10px 12px;
+    border:1px solid #d0d6ce;
+    border-radius:8px;
+    font-size:14px;
+  }
+  .row{display:flex;gap:10px}
+  .row > *{flex:1}
+  button.calc{
+    margin-top:12px;
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:none;
+    background:linear-gradient(90deg,#43a047,#2e7d32);
+    color:white;
+    font-weight:700;
+    cursor:pointer;
+    font-size:15px;
+  }
+  .meta{margin-top:12px;color:#0f5132;font-weight:600}
+
+  /* right: visualization */
+  .vis {
+    width:380px;
+    max-width:42%;
+    padding:12px;
+    border-left:1px dashed #e6efe6;
+  }
+  .card{
+    background:linear-gradient(180deg,#fff,#fbfff9);
+    border-radius:10px;
+    padding:12px;
+    box-shadow:0 6px 14px rgba(16,24,16,0.06);
+  }
+  .result{
+    font-size:18px;
+    font-weight:700;
+    color:var(--accent);
+    margin-bottom:6px;
+  }
+  .sub{color:var(--muted);font-size:13px;margin-bottom:12px}
+  .stage{
+    display:flex;
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .box-flag{
+    flex:1;
+    padding:8px;
+    border-radius:8px;
+    text-align:center;
+    border:1px solid #e1f1e1;
+    background:#f6fff6;
+    transition:box-shadow .25s, transform .18s;
+  }
+  .box-flag.active{
+    box-shadow:0 6px 18px rgba(46,125,50,0.18);
+    transform:translateY(-4px);
+  }
+  /* visual rect */
+  .field-vis {
+    height:200px;
+    border-radius:8px;
+    overflow:hidden;
+    border:1px solid #e6efe6;
+    display:flex;
+    align-items:end;
+    justify-content:center;
+    background:linear-gradient(180deg,#eaf6e9,#f8fff8);
+    position:relative;
+  }
+  .plot {
+    width:80%;
+    height:10%;
+    background:linear-gradient(180deg,#7bbf59,#3f8b2b);
+    border-radius:6px 6px 0 0;
+    transition:height .6s cubic-bezier(.2,.9,.3,1), width .4s;
+    box-shadow:inset 0 -10px 30px rgba(0,0,0,0.08);
+  }
+  .small{
+    font-size:12px;color:var(--muted);
+    margin-top:8px;
+  }
+  .export-row{display:flex;gap:8px;margin-top:10px}
+  .export-row button{flex:1;padding:8px;border-radius:8px;border:none;background:#e6f4e7;color:#0a4a22;cursor:pointer}
+  .note{font-size:12px;color:#466b3d;margin-top:8px}
+
+  footer.credit{margin-top:12px;font-size:12px;color:#6b6b6b}
+</style>
+</head>
+<body>
+  <div class="panel" role="application" aria-label="Calculadora de área para milho e cana">
+    <div class="form" aria-hidden="false">
+      <h1>Calculadora Agritech — Milho &amp; Cana de Açúcar</h1>
+      <p class="lead">Escolha a cultura, ajuste parâmetros (ou use os presets) e clique em <strong>Calcular Área</strong>.</p>
+
+      <label for="crop">Cultura</label>
+      <select id="crop" onchange="applyPreset()">
+        <option value="milho">Milho 🌽</option>
+        <option value="cana">Cana-de-açúcar 🪵</option>
+      </select>
+
+      <label for="seeds">Número de sementes / pés (unidades)</label>
+      <input id="seeds" type="number" min="1" placeholder="Ex: 10000" value="10000" oninput="highlight('seeds')">
+
+      <div class="row">
+        <div>
+          <label for="lineSpacing">Espaçamento entre linhas (m)</label>
+          <input id="lineSpacing" type="number" step="0.01" value="0.80" oninput="highlight('lineSpacing')">
+        </div>
+        <div>
+          <label for="plantSpacing">Espaçamento entre plantas (m)</label>
+          <input id="plantSpacing" type="number" step="0.01" value="0.25" oninput="highlight('plantSpacing')">
+        </div>
+      </div>
+
+      <label for="germination">Taxa de germinação / brotação (%)</label>
+      <input id="germination" type="number" step="0.1" value="90" oninput="highlight('germination')">
+
+      <button class="calc" onclick="calculateArea()">Calcular Área</button>
+      <div class="meta">Resultado em metros quadrados (m²) e hectares (ha). Presets automáticos aplicáveis por cultura.</div>
+
+      <div style="margin-top:14px">
+        <label><input type="checkbox" id="usePreset" checked onchange="togglePreset()"> Usar presets por cultura</label>
+      </div>
+
+      <footer class="credit">Agri-UI • Versão local • Sem conexão necessária</footer>
+    </div>
+
+    <aside class="vis" aria-hidden="false">
+      <div class="card">
+        <div class="result" id="resultText">Área necessária: —</div>
+        <div class="sub" id="subText">Preencha os dados e calcule</div>
+
+        <div class="stage" aria-hidden="false">
+          <div id="flagSeeds" class="box-flag">Sementes</div>
+          <div id="flagSpacing" class="box-flag">Espaçamento</div>
+          <div id="flagGerm" class="box-flag">Germinação</div>
+        </div>
+
+        <div class="field-vis" aria-hidden="true">
+          <div id="plot" class="plot" style="height:8%"></div>
+        </div>
+
+        <div class="small" id="ratioText">—</div>
+
+        <div class="export-row">
+          <button onclick="downloadCSV()">Exportar CSV</button>
+          <button onclick="resetForm()">Reset</button>
+        </div>
+
+        <div class="note">Observação: presets sugerem parâmetros típicos; ajuste conforme sua realidade de campo.</div>
+      </div>
+    </aside>
+  </div>
+
+<script>
+  // Presets: defaults for each crop (typical, can be tuned)
+  const presets = {
+    milho: {lineSpacing:0.80, plantSpacing:0.25, germination:90},
+    cana:  {lineSpacing:1.20, plantSpacing:0.50, germination:85}
+  };
+
+  // On load apply milho preset
+  function applyPreset(){
+    const crop = document.getElementById('crop').value;
+    const usePreset = document.getElementById('usePreset').checked;
+    if(!usePreset) return;
+    const p = presets[crop];
+    document.getElementById('lineSpacing').value = p.lineSpacing;
+    document.getElementById('plantSpacing').value = p.plantSpacing;
+    document.getElementById('germination').value = p.germination;
+    // soft highlight
+    ['lineSpacing','plantSpacing','germination'].forEach(id=>pulse(id));
+  }
+
+  function togglePreset(){
+    if(document.getElementById('usePreset').checked) applyPreset();
+  }
+
+  function highlight(id){
+    const el = document.getElementById(id);
+    el.style.boxShadow = '0 6px 18px rgba(46,125,50,0.12)';
+    setTimeout(()=>el.style.boxShadow='',350);
+  }
+
+  function pulse(id){
+    const el = document.getElementById(id);
+    el.style.transition='transform .18s, box-shadow .18s';
+    el.style.transform='translateY(-4px)';
+    el.style.boxShadow='0 8px 20px rgba(46,125,50,0.14)';
+    setTimeout(()=>{
+      el.style.transform=''; el.style.boxShadow=''; 
+    },420);
+  }
+
+  // visually mark which boxes are used
+  function setFlag(activeIds=[]){
+    ['flagSeeds','flagSpacing','flagGerm'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(activeIds.includes(id)) el.classList.add('active'); else el.classList.remove('active');
+    });
+  }
+
+  // Core calc: density = germination/(lineSpacing*plantSpacing), area = seeds / density
+  function calculateArea(){
+    const seeds = parseFloat(document.getElementById('seeds').value);
+    const lineSpacing = parseFloat(document.getElementById('lineSpacing').value);
+    const plantSpacing = parseFloat(document.getElementById('plantSpacing').value);
+    const germinationPct = parseFloat(document.getElementById('germination').value);
+
+    // validations
+    if(!isFinite(seeds) || seeds<=0 || !isFinite(lineSpacing) || lineSpacing<=0 || !isFinite(plantSpacing) || plantSpacing<=0 || !isFinite(germinationPct) || germinationPct<=0){
+      document.getElementById('resultText').innerText = "Preencha todos os campos corretamente.";
+      document.getElementById('subText').innerText = '';
+      return;
+    }
+
+    const G = germinationPct / 100.0;
+    const density = G / (lineSpacing * plantSpacing); // unidades: planta/m²
+    const area = seeds / density; // m²
+
+    const hectares = area / 10000;
+    document.getElementById('resultText').innerText = `Área necessária: ${area.toFixed(2)} m²`;
+    document.getElementById('subText').innerText = `(${hectares.toFixed(4)} ha) • Densidade estimada: ${density.toFixed(2)} plantas/m²`;
+
+    // flags animate
+    setFlag(['flagSeeds','flagSpacing','flagGerm']);
+
+    // visual plot: scale area visually (non-linear clamp)
+    // map area to height percentage [6%..96%] where 0..maxArea
+    const maxArea = 20000; // escala visual: 2 ha para encolher/expandir
+    const clamped = Math.min(area, maxArea);
+    const pct = 6 + (clamped / maxArea) * 90; // 6%..96%
+    const plot = document.getElementById('plot');
+    plot.style.height = pct + '%';
+    // width reflect relative size (small tweak)
+    plot.style.width = (40 + (Math.min(area,5000)/5000)*60) + '%';
+
+    document.getElementById('ratioText').innerText = `Cada bloco: proporcional. Visual escala até ${maxArea} m².`;
+    // save last result in dataset for export
+    plot.dataset.last = JSON.stringify({crop:document.getElementById('crop').value,seeds,lineSpacing,plantSpacing,germinationPct,area,hectares,density});
+  }
+
+  function resetForm(){
+    document.getElementById('seeds').value = 10000;
+    document.getElementById('usePreset').checked = true;
+    applyPreset();
+    document.getElementById('resultText').innerText = 'Área necessária: —';
+    document.getElementById('subText').innerText = 'Preencha os dados e calcule';
+    setFlag([]);
+    document.getElementById('plot').style.height='8%';
+    document.getElementById('plot').style.width='80%';
+    document.getElementById('ratioText').innerText='—';
+  }
+
+  function downloadCSV(){
+    const plot = document.getElementById('plot');
+    const raw = plot.dataset.last;
+    if(!raw){
+      alert('Calcule primeiro para exportar.');
+      return;
+    }
+    const obj = JSON.parse(raw);
+    const headers = ['cultura','sementes','espacamento_linhas_m','espacamento_plantas_m','germinacao_pct','area_m2','area_ha','densidade_plantas_m2'];
+    const values = [obj.crop,obj.seeds,obj.lineSpacing,obj.plantSpacing,obj.germinationPct,obj.area.toFixed(2),obj.hectares.toFixed(4),obj.density.toFixed(2)];
+    const csv = headers.join(',') + '\n' + values.join(',');
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `calculo_area_${obj.crop}_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // Initialize with preset
+  applyPreset();
+
+</script>
+</body>
+</html>
